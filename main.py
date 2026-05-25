@@ -3,8 +3,9 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 from skan import Skeleton
-from skan_vectorization.get_skeleton_data import get_skeleton_data
 from load_test_matrices import load_matrices_from_json
+from skan_vectorization.get_skeleton_data import get_skeleton_data as skan_vectorization
+from vectorization_lingdong.get_skeleton_data import get_skeleton_data as lindong_vectorization
 
 def draw_skeleton(ax, img, lines, title):
     ax.clear()
@@ -74,7 +75,8 @@ def main():
     all_lines = []
 
     for img in matrices:
-        lines = get_skeleton_data(img)
+        #lines = skan_vectorization(img)
+        lines = lindong_vectorization(img)
         all_lines.append(lines)
 
     fig, ax = plt.subplots(figsize=(7, 7))
