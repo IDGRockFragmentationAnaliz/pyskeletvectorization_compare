@@ -12,3 +12,9 @@ pip install shapely
 pip install opencv-contrib-python
 pip install pyshp
 ```
+
+- Skan, doumentation
+[ https://skeleton-analysis.org/stable/ ]
+
+- LingDong, github
+[ https://github.com/LingDong-/skeleton-tracing ]
