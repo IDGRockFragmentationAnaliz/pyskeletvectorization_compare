@@ -2,9 +2,6 @@ import json
 from pathlib import Path
 import numpy as np
 
-import json
-import numpy as np
-
 
 def load_matrices_from_json(path):
     with open(path, "r", encoding="utf-8") as f:

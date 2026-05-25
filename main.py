@@ -3,71 +3,48 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 from skan import Skeleton
+from skan_vectorization.get_skeleton_data import get_skeleton_data
 from load_test_matrices import load_matrices_from_json
 
-
-def get_skeleton_data(img):
-    image_thin = img > 0
-
-    sk = Skeleton(image_thin, keep_images=False)
-
-    graph = sk.graph
-    coords = sk.coordinates
-
-    rows, cols = graph.nonzero()
-
-    # Убираем дубли рёбер, потому что graph симметричный
-    mask = rows < cols
-    rows = rows[mask]
-    cols = cols[mask]
-
-    degrees = np.asarray(graph.astype(bool).sum(axis=1)).ravel()
-
-    return {
-        "graph": graph,
-        "coords": coords,
-        "rows": rows,
-        "cols": cols,
-        "degrees": degrees,
-    }
-
-
-def draw_skeleton(ax, img, skeleton_data, title):
+def draw_skeleton(ax, img, lines, title):
     ax.clear()
-
-    graph = skeleton_data["graph"]
-    coords = skeleton_data["coords"]
-    rows = skeleton_data["rows"]
-    cols = skeleton_data["cols"]
-    degrees = skeleton_data["degrees"]
 
     ax.imshow(img, cmap="gray", interpolation="nearest", origin="upper")
 
-    # Рисуем рёбра графа
-    for i, j in zip(rows, cols):
-        r0, c0 = coords[i]
-        r1, c1 = coords[j]
+    # Рисуем ломаные линии
+    for line in lines:
+        if len(line) == 1:
+            ax.scatter(
+                line[:, 0],
+                line[:, 1],
+                s=60,
+                color="cyan",
+                edgecolors="blue",
+                zorder=3,
+            )
+        else:
+            ax.plot(
+                line[:, 0],
+                line[:, 1],
+                color="blue",
+                linewidth=2,
+            )
 
-        ax.plot(
-            [c0, c1],
-            [r0, r1],
-            color="blue",
-            linewidth=2,
-        )
+            # Точки ломаной
+            ax.scatter(
+                line[:, 0],
+                line[:, 1],
+                s=35,
+                color="cyan",
+                edgecolors="blue",
+                zorder=3,
+            )
 
-    # Рисуем узлы графа
-    ax.scatter(
-        coords[:, 1],
-        coords[:, 0],
-        s=50,
-        color="cyan",
-        edgecolors="blue",
-        zorder=3,
-    )
+    total_points = sum(len(line) for line in lines)
 
     ax.set_title(
         f"{title}\n"
-        f"nodes={graph.shape[0]}, edges={len(rows)}, degrees={degrees.tolist()}"
+        f"polylines={len(lines)}, points={total_points}"
     )
 
     ax.set_aspect("equal")
@@ -79,15 +56,26 @@ def draw_skeleton(ax, img, skeleton_data, title):
     ax.set_ylim(img.shape[0] - 0.5, -0.5)
 
 
+def print_lines(title, lines):
+    print("=" * 80)
+    print(title)
+    print(f"Количество ломаных: {len(lines)}")
+
+    for idx, line in enumerate(lines):
+        print(f"line[{idx}]:")
+        print(line)
+
+
 def main():
     path = "test_matrices.json"
 
     matrices = load_matrices_from_json(path)
 
-    skeletons = []
+    all_lines = []
 
     for img in matrices:
-        skeletons.append(get_skeleton_data(img))
+        lines = get_skeleton_data(img)
+        all_lines.append(lines)
 
     fig, ax = plt.subplots(figsize=(7, 7))
 
@@ -99,11 +87,15 @@ def main():
     draw_skeleton(
         ax=ax,
         img=matrices[current_index],
-        skeleton_data=skeletons[current_index],
+        lines=all_lines[current_index],
         title=f"matrix_{current_index + 1}",
     )
 
-    # Ось для slider
+    print_lines(
+        title=f"matrix_{current_index + 1}",
+        lines=all_lines[current_index],
+    )
+
     slider_ax = fig.add_axes([0.2, 0.06, 0.6, 0.04])
 
     slider = Slider(
@@ -121,8 +113,13 @@ def main():
         draw_skeleton(
             ax=ax,
             img=matrices[idx],
-            skeleton_data=skeletons[idx],
+            lines=all_lines[idx],
             title=f"matrix_{idx + 1}",
+        )
+
+        print_lines(
+            title=f"matrix_{idx + 1}",
+            lines=all_lines[idx],
         )
 
         fig.canvas.draw_idle()
