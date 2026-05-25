@@ -18,3 +18,12 @@ pip install pyshp
 
 - LingDong, github
 [https://github.com/LingDong-/skeleton-tracing]
+
+- sknw, github
+[https://github.com/Image-Py/sknw]
+
+- NET, Article,\
+Lasser, J., Katifori, E. NET: a new framework for the vectorization and examination of network data. Source Code Biol Med 12, 4 (2017). https://doi.org/10.1186/s13029-017-0064-3
+
+- NEFI: Network Extraction From Images,\
+Dirnberger, M., Kehl, T. & Neumann, A. NEFI: Network Extraction From Images. Sci Rep 5, 15669 (2015). https://doi.org/10.1038/srep15669
