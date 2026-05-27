@@ -4,7 +4,7 @@ from matplotlib.widgets import Slider
 
 from skan import Skeleton
 from load_test_matrices import load_matrices_from_json
-from skan_vectorization.get_skeleton_data import get_skeleton_data as skan_vectorization
+from vectorization_skan.get_skeleton_data import get_skeleton_data as skan_vectorization
 from vectorization_lingdong.get_skeleton_data import get_skeleton_data as lindong_vectorization
 from vectorization_pi2 import vectorize_skeleton as pi2_vectorization
 
