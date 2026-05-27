@@ -6,6 +6,7 @@ from skan import Skeleton
 from load_test_matrices import load_matrices_from_json
 from skan_vectorization.get_skeleton_data import get_skeleton_data as skan_vectorization
 from vectorization_lingdong.get_skeleton_data import get_skeleton_data as lindong_vectorization
+from vectorization_pi2 import vectorize_skeleton as pi2_vectorization
 
 def draw_skeleton(ax, img, lines, title):
     ax.clear()
@@ -76,7 +77,8 @@ def main():
 
     for img in matrices:
         #lines = skan_vectorization(img)
-        lines = lindong_vectorization(img)
+        lines = pi2_vectorization(img)
+        #lines = lindong_vectorization(img)
         all_lines.append(lines)
 
     fig, ax = plt.subplots(figsize=(7, 7))

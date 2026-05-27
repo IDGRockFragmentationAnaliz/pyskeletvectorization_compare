@@ -1,25 +1,20 @@
 import numpy as np
-from pi2.pi2py2 import *
+from .pi2.pi2py2 import *
 
 
-def pi2_vectorize_skeleton(img: np.ndarray) -> list[np.ndarray]:
+def get_skeleton_data(img: np.ndarray) -> list[np.ndarray]:
     """
-    Vectorize 1-pixel skeleton image using pi2.tracelineskeleton.
+    Vectorize 1-pixel skeleton image using pi2.
 
     Input:
         img: 2D numpy array.
-             Non-zero pixels are treated as skeleton pixels.
+             Skeleton pixels are non-zero.
 
     Output:
         [
             np.array([[x1, y1], [x2, y2], ...], dtype=np.int32),
             ...
         ]
-
-    Notes:
-        - Coordinates are returned as matplotlib/image coordinates: x=col, y=row.
-        - pi2 may create centroid points for junction regions.
-          Those centroid coordinates can be fractional; here they are rounded to int32.
     """
     img = np.asarray(img)
 
@@ -30,7 +25,6 @@ def pi2_vectorize_skeleton(img: np.ndarray) -> list[np.ndarray]:
 
     skel_np = (img > 0).astype(np.uint8) * 255
 
-    # tracelineskeleton mutates/clears input image, so use a copy.
     skel_pi = pi.newimage(ImageDataType.UINT8)
     skel_pi.from_numpy(skel_np.copy())
 
@@ -45,8 +39,8 @@ def pi2_vectorize_skeleton(img: np.ndarray) -> list[np.ndarray]:
         edges,
         measurements,
         edge_points,
-        True,   # store all edge points
-        1,      # thread count
+        True,  # store all edge points
+        1,     # thread count
     )
 
     points = pi.newimage(ImageDataType.FLOAT32)
@@ -61,55 +55,59 @@ def pi2_vectorize_skeleton(img: np.ndarray) -> list[np.ndarray]:
         lines,
     )
 
-    points_xyz = _normalize_pi2_points(points.to_numpy())
-    polylines = _parse_pi2_lines(lines.to_numpy(), points_xyz)
-
-    return polylines
+    points_xyz = _normalize_points_xyz(points.to_numpy())
+    return _parse_lines_to_polylines(lines.to_numpy(), points_xyz)
 
 
-def _normalize_pi2_points(points_np: np.ndarray) -> np.ndarray:
+def _normalize_points_xyz(points_np: np.ndarray) -> np.ndarray:
     """
-    Normalize pi2 points array to shape (N, 3).
+    pi2 getpointsandlines returns points as x,y,z coordinates.
 
-    pi2 point coordinates are treated as array-axis coordinates:
-        [row, col, z]
-    or similar, depending on pi2 numpy bridge.
-
-    Later we convert:
-        row, col -> x=col, y=row
+    Output:
+        shape (N, 3)
     """
-    points_np = np.asarray(points_np)
-    points_np = np.squeeze(points_np)
+    arr = np.asarray(points_np)
+    arr = np.squeeze(arr)
 
-    if points_np.size == 0:
+    if arr.size == 0:
         return np.empty((0, 3), dtype=np.float32)
 
-    if points_np.ndim == 1:
-        if points_np.size % 3 != 0:
-            raise ValueError(f"Cannot interpret pi2 points shape={points_np.shape}")
-        return points_np.reshape(-1, 3).astype(np.float32)
+    if arr.ndim == 1:
+        if arr.size % 3 != 0:
+            raise ValueError(f"Cannot interpret points array shape={arr.shape}")
+        return arr.reshape(-1, 3).astype(np.float32)
 
-    if points_np.ndim == 2:
-        if points_np.shape[1] == 3:
-            return points_np.astype(np.float32)
-        if points_np.shape[0] == 3:
-            return points_np.T.astype(np.float32)
+    if arr.ndim == 2:
+        # pi2 docs say points are 3 x N.
+        # Prefer 3 x N interpretation.
+        if arr.shape[0] == 3:
+            return arr.T.astype(np.float32)
 
-    raise ValueError(f"Cannot interpret pi2 points shape={points_np.shape}")
+        # fallback for wrappers that return N x 3
+        if arr.shape[1] == 3:
+            return arr.astype(np.float32)
+
+    raise ValueError(f"Cannot interpret points array shape={arr.shape}")
 
 
-def _parse_pi2_lines(lines_np: np.ndarray, points_xyz: np.ndarray) -> list[np.ndarray]:
+def _parse_lines_to_polylines(
+    lines_np: np.ndarray,
+    points_xyz: np.ndarray,
+) -> list[np.ndarray]:
     """
-    Parse pi2 getpointsandlines() compressed lines format.
+    Parse compressed pi2 lines.
 
-    Expected compressed format:
+    Format:
         [line_count,
          point_count_0, idx_0_0, idx_0_1, ...,
          point_count_1, idx_1_0, idx_1_1, ...,
          ...]
 
-    Returns:
-        list of np.ndarray, each shape (N, 2), dtype int32.
+    Output:
+        [
+            np.array([[x1, y1], [x2, y2], ...], dtype=np.int32),
+            ...
+        ]
     """
     flat = np.asarray(lines_np).ravel().astype(np.int64)
 
@@ -141,32 +139,36 @@ def _parse_pi2_lines(lines_np: np.ndarray, points_xyz: np.ndarray) -> list[np.nd
         point_indices = flat[offset:offset + point_count]
         offset += point_count
 
-        coords = points_xyz[point_indices]
+        if point_indices.size == 0:
+            continue
 
-        # pi2/numpy image coordinates are interpreted as row,col.
-        # Required output is x,y, so swap first two coordinates.
-        xy_float = coords[:, [1, 0]]
+        if point_indices.min() < 0 or point_indices.max() >= len(points_xyz):
+            raise ValueError(
+                f"Bad point index in line {line_idx}: "
+                f"min={point_indices.min()}, max={point_indices.max()}, "
+                f"points_count={len(points_xyz)}"
+            )
 
-        # pi2 junction centroids may be fractional.
-        # Required output dtype is int32, so round to nearest pixel coordinate.
-        xy_int = np.rint(xy_float).astype(np.int32)
+        coords_xyz = points_xyz[point_indices]
 
-        # Optional cleanup: remove consecutive duplicates after rounding.
-        xy_int = _remove_consecutive_duplicate_points(xy_int)
+        # getpointsandlines returns x,y,z.
+        xy = coords_xyz[:, :2]
 
-        polylines.append(xy_int)
+        # pi2 can return centroid points with fractional coordinates.
+        xy = np.rint(xy).astype(np.int32)
+
+        xy = _remove_consecutive_duplicate_points(xy)
+
+        if len(xy) > 0:
+            polylines.append(xy)
 
     return polylines
 
 
 def _remove_consecutive_duplicate_points(line: np.ndarray) -> np.ndarray:
-    """
-    Remove consecutive duplicate points caused by centroid rounding.
-    """
     if len(line) <= 1:
         return line
 
     keep = np.ones(len(line), dtype=bool)
     keep[1:] = np.any(line[1:] != line[:-1], axis=1)
-
     return line[keep]

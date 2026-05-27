@@ -1,0 +1,1 @@
+from . vectorization_pi2 import get_skeleton_data as vectorize_skeleton
