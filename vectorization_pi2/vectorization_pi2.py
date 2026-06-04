@@ -151,8 +151,9 @@ def _parse_lines_to_polylines(
 
         coords_xyz = points_xyz[point_indices]
 
-        # getpointsandlines returns x,y,z.
-        xy = coords_xyz[:, :2]
+        # pi2 через from_numpy() в вашем случае ведет себя как row,col,z.
+        # Для формата [[x, y], ...] нужно row,col -> col,row.
+        xy = coords_xyz[:, [1, 0]]
 
         # pi2 can return centroid points with fractional coordinates.
         xy = np.rint(xy).astype(np.int32)
