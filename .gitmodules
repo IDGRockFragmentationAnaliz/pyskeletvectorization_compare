@@ -1,0 +1,3 @@
+[submodule "pyskeletvectorization"]
+	path = pyskeletvectorization
+	url = https://github.com/IDGRockFragmentationAnaliz/pyskeletvectorization.git
