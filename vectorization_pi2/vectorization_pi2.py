@@ -23,7 +23,18 @@ def get_skeleton_data(img: np.ndarray) -> list[np.ndarray]:
 
     pi = Pi2()
 
+    pad = 1
+
     skel_np = (img > 0).astype(np.uint8) * 255
+
+    # Add a zero border so skeleton branches touching the image edge
+    # are not located directly on pi2 image boundary.
+    skel_np = np.pad(
+        skel_np,
+        pad_width=pad,
+        mode="constant",
+        constant_values=0,
+    )
 
     skel_pi = pi.newimage(ImageDataType.UINT8)
     skel_pi.from_numpy(skel_np.copy())
@@ -56,7 +67,7 @@ def get_skeleton_data(img: np.ndarray) -> list[np.ndarray]:
     )
 
     points_xyz = _normalize_points_xyz(points.to_numpy())
-    return _parse_lines_to_polylines(lines.to_numpy(), points_xyz)
+    return _parse_lines_to_polylines(lines.to_numpy(), points_xyz, pad=pad)
 
 
 def _normalize_points_xyz(points_np: np.ndarray) -> np.ndarray:
@@ -93,6 +104,7 @@ def _normalize_points_xyz(points_np: np.ndarray) -> np.ndarray:
 def _parse_lines_to_polylines(
     lines_np: np.ndarray,
     points_xyz: np.ndarray,
+    pad: int = 0,
 ) -> list[np.ndarray]:
     """
     Parse compressed pi2 lines.
@@ -154,6 +166,11 @@ def _parse_lines_to_polylines(
         # pi2 через from_numpy() в вашем случае ведет себя как row,col,z.
         # Для формата [[x, y], ...] нужно row,col -> col,row.
         xy = coords_xyz[:, [1, 0]]
+
+        # Remove padding shift before rounding, so fractional centroid
+        # coordinates are handled in the original image coordinate system.
+        if pad:
+            xy = xy - pad
 
         # pi2 can return centroid points with fractional coordinates.
         xy = np.rint(xy).astype(np.int32)
