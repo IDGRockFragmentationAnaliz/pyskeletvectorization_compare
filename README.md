@@ -22,6 +22,10 @@ pip install pyshp
 - sknw, github
 [https://github.com/Image-Py/sknw]
 
+- pi2, doc, github
+[https://pi2-docs.readthedocs.io/en/latest/reference/tracelineskeleton.html]
+[https://github.com/arttumiettinen/pi2/tree/master]
+
 - NET, Article,\
 Lasser, J., Katifori, E. NET: a new framework for the vectorization and examination of network data. Source Code Biol Med 12, 4 (2017). https://doi.org/10.1186/s13029-017-0064-3
 

@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
-
+import matplotlib.patheffects as pe
 from skan import Skeleton
 from load_test_matrices import load_matrices_from_json
 from vectorization_skan.get_skeleton_data import get_skeleton_data as skan_vectorization
 from vectorization_lingdong.get_skeleton_data import get_skeleton_data as lindong_vectorization
 from vectorization_pi2 import vectorize_skeleton as pi2_vectorization
-from vectorization_neighborhood import vectorize as neighborhood_vectorization
+from pyskeletvectorization import vectorize as neighborhood_vectorization
 
 
 def main():
@@ -76,16 +76,20 @@ def draw_skeleton(ax, img, lines, title):
                 line[:, 0],
                 line[:, 1],
                 s=60,
-                color="cyan",
-                edgecolors="blue",
+                color="white",
+                edgecolors="black",
                 zorder=3,
             )
         else:
             ax.plot(
                 line[:, 0],
                 line[:, 1],
-                color="blue",
-                linewidth=2,
+                color="white",
+                linewidth=1,
+                path_effects=[
+                    pe.Stroke(linewidth=3, foreground="black"),
+                    pe.Normal(),
+                ],
             )
 
             # Точки ломаной
@@ -93,8 +97,8 @@ def draw_skeleton(ax, img, lines, title):
                 line[:, 0],
                 line[:, 1],
                 s=35,
-                color="cyan",
-                edgecolors="blue",
+                color="white",
+                edgecolors="black",
                 zorder=3,
             )
 
@@ -114,6 +118,8 @@ def draw_skeleton(ax, img, lines, title):
 
     ax.set_xticks(np.arange(-0.5, w, 1), minor=True)
     ax.set_yticks(np.arange(-0.5, h, 1), minor=True)
+    ax.tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+    ax.tick_params(axis='y', which='both', left=False, labelleft=False)
 
     ax.grid(which="minor", color="lightgray", linewidth=0.5)
     ax.grid(which="major", visible=False)
@@ -122,6 +128,7 @@ def draw_skeleton(ax, img, lines, title):
 
     ax.set_xlim(-0.5, w - 0.5)
     ax.set_ylim(h - 0.5, -0.5)
+    plt.savefig('pictures/1.tiff', dpi=600)
 
 
 if __name__ == "__main__":
