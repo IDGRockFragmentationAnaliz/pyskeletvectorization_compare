@@ -1,15 +1,13 @@
 import numpy as np
 from numba import njit
 from .raveled_offets import raveled_offsets_c8
-from skimage.util import map_array
 from scipy import sparse
-from scipy.sparse import csgraph
+from .simplify_links import SIMPLE_MASK
 
-def pixel_graph(image, simplify=True):
+
+def neighborhood_pixel_graph(image, simplify=True):
     nodes, bit_neighborhood = _build_bit_neighborhood(image)
     if simplify:
-        from .simplify_links import SIMPLE_MASK
-        print(bit_neighborhood)
         bit_neighborhood = SIMPLE_MASK[bit_neighborhood]
 
 

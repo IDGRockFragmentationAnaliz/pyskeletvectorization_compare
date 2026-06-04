@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from rasterio.rio.helpers import coords
 from skan import Skeleton
-from .templated_skeleton import pixel_graph
+from .pixel_graph import neighborhood_pixel_graph
 
-def get_skeleton_data(img):
+def vectorize(img):
     """
     Возвращает только список ломаных линий.
 
@@ -33,12 +33,8 @@ def get_skeleton_data(img):
 
     if not np.any(image_thin):
         return []
-    graph, coords = pixel_graph(image_thin.astype(bool))
+    graph, coords = neighborhood_pixel_graph(image_thin.astype(bool))
     graph = graph.tocsr()
-
-    #sk = Skeleton(image_thin, keep_images=False)
-    #graph = sk.graph.tocsr()
-    #coords = sk.coordinates  # [row, col]
 
     node_count = graph.shape[0]
 

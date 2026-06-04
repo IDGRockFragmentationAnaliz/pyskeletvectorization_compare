@@ -5,7 +5,7 @@ from numba import njit
 @njit
 def raveled_offsets_c8(image_shape):
     """
-    Возвращает raveled-смещения соседей в твоём порядке:
+    Возвращает raveled-смещения соседей вследующем плрядке:
 
         [3 2 1]
         [4 x 0]
