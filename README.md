@@ -28,6 +28,7 @@ pip install pyshp
 
 - NET, Article,\
 Lasser, J., Katifori, E. NET: a new framework for the vectorization and examination of network data. Source Code Biol Med 12, 4 (2017). https://doi.org/10.1186/s13029-017-0064-3
+Подход использует бинаризацию изображения, строит внутри выделенных областей ограниченную триангуляцию Делоне и извлекает центральный скелет как граф, используя геометрию треугольников и расстояние до границ объекта.
 
 - NEFI: Network Extraction From Images,\
 Dirnberger, M., Kehl, T. & Neumann, A. NEFI: Network Extraction From Images. Sci Rep 5, 15669 (2015). https://doi.org/10.1038/srep15669

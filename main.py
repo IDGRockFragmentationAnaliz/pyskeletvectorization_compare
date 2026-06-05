@@ -18,10 +18,10 @@ def main():
     all_lines = []
 
     for img in matrices:
-        #lines = skan_vectorization(img)
+        lines = skan_vectorization(img)
         #lines = pi2_vectorization(img)
         #lines = lindong_vectorization(img)
-        lines = neighborhood_vectorization(img)
+        #lines = neighborhood_vectorization(img)
         all_lines.append(lines)
 
     fig, ax = plt.subplots(figsize=(7, 7))
@@ -128,7 +128,7 @@ def draw_skeleton(ax, img, lines, title):
 
     ax.set_xlim(-0.5, w - 0.5)
     ax.set_ylim(h - 0.5, -0.5)
-    plt.savefig('pictures/1.tiff', dpi=600)
+    plt.savefig('pictures/1.png', dpi=300)
 
 
 if __name__ == "__main__":
