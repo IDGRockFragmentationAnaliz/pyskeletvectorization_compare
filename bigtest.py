@@ -10,6 +10,79 @@ from vectorization_skan.get_skeleton_data import get_skeleton_data as skan_vecto
 from pyskeletvectorization import vectorize as neighborhood_vectorization
 
 
+def main():
+    image_path = Path("skelettest/skeleton_1.png")
+
+    img_gray = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+
+    if img_gray is None:
+        raise FileNotFoundError(f"Не удалось загрузить изображение: {image_path}")
+
+    # Векторизация выполняется ДО crop — на полном изображении
+    start_time = time.perf_counter()
+    lines = neighborhood_vectorization(img_gray)
+    elapsed_time = time.perf_counter() - start_time
+
+    print(f"Время векторизации: {elapsed_time:.6f} сек")
+    print(f"Всего линий после векторизации: {len(lines)}")
+
+    # Crop только для отображения
+    cropped, crop_x, crop_y, crop_size = center_crop_1024(img_gray)
+
+    # Только фильтрация линий, без нарезки на сегменты
+    visible_lines = prepare_lines_for_crop(
+        lines,
+        crop_x,
+        crop_y,
+        crop_size
+    )
+
+    print(f"Линий, касающихся crop: {len(visible_lines)}")
+
+    # Узлы линий в координатах crop
+    node_points = collect_line_nodes(visible_lines)
+
+    print(f"Узлов линий в crop: {len(node_points)}")
+
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(1, 1, 1)
+
+    ax.imshow(cropped, cmap="gray", zorder=0)
+    ax.axis("off")
+
+    # Черные точки узлов рисуются ПОД линиями
+    if len(node_points) > 0:
+        ax.scatter(
+            node_points[:, 0],
+            node_points[:, 1],
+            s=8,
+            c="blue",
+            marker="o",
+            linewidths=0,
+            zorder=1
+        )
+
+    # Быстрее, чем делать ax.plot(...) для каждой линии отдельно
+    if visible_lines:
+        colors = np.random.rand(len(visible_lines), 3)
+
+        line_collection = LineCollection(
+            visible_lines,
+            colors=colors,
+            linewidths=1,
+            zorder=2
+        )
+
+        ax.add_collection(line_collection)
+
+    # Показываем только область crop.
+    # Линии и точки могут выходить за края, matplotlib сам их визуально обрежет.
+    ax.set_xlim(0, crop_size)
+    ax.set_ylim(crop_size, 0)
+
+    plt.show()
+
+
 def center_crop_1024(img):
     h, w = img.shape[:2]
     crop_size = 1024
@@ -123,58 +196,37 @@ def prepare_lines_for_crop(lines, crop_x, crop_y, crop_size):
     return visible_lines
 
 
-def main():
-    image_path = Path("skelettest/skeleton_1.png")
+def collect_line_nodes(lines):
+    """
+    Собирает точки узлов линий.
 
-    img_gray = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    Для полилиний формата [[x1, y1], [x2, y2], ...]
+    узлами считаются все точки полилинии.
 
-    if img_gray is None:
-        raise FileNotFoundError(f"Не удалось загрузить изображение: {image_path}")
+    Для отрезков формата [[x1, y1], [x2, y2]]
+    узлами считаются обе конечные точки.
+    """
 
-    # Векторизация выполняется ДО crop — на полном изображении
-    start_time = time.perf_counter()
-    lines = neighborhood_vectorization(img_gray)
-    elapsed_time = time.perf_counter() - start_time
+    if not lines:
+        return np.empty((0, 2), dtype=np.float32)
 
-    print(f"Время векторизации: {elapsed_time:.6f} сек")
-    print(f"Всего линий после векторизации: {len(lines)}")
+    nodes = []
 
-    # Crop только для отображения
-    cropped, crop_x, crop_y, crop_size = center_crop_1024(img_gray)
+    for line in lines:
+        line = np.asarray(line, dtype=np.float32)
 
-    # Только фильтрация линий, без нарезки на сегменты
-    visible_lines = prepare_lines_for_crop(
-        lines,
-        crop_x,
-        crop_y,
-        crop_size
-    )
+        if line.ndim == 2 and line.shape[1] == 2 and len(line) > 0:
+            nodes.append(line)
 
-    print(f"Линий, касающихся crop: {len(visible_lines)}")
+    if not nodes:
+        return np.empty((0, 2), dtype=np.float32)
 
-    fig = plt.figure(figsize=(6, 6))
-    ax = fig.add_subplot(1, 1, 1)
+    nodes = np.vstack(nodes)
 
-    ax.imshow(cropped, cmap="gray")
-    ax.axis("off")
+    # Убираем дубликаты узлов, чтобы не рисовать одну и ту же точку много раз
+    nodes = np.unique(nodes, axis=0)
 
-    # Быстрее, чем делать ax.plot(...) для каждой линии отдельно
-    if visible_lines:
-        colors = np.random.rand(len(visible_lines), 3)
-
-        line_collection = LineCollection(
-            visible_lines,
-            colors=colors,
-            linewidths=1
-        )
-
-        ax.add_collection(line_collection)
-    # Показываем только область crop.
-    # Линии могут выходить за края, matplotlib сам их визуально обрежет.
-    ax.set_xlim(0, crop_size)
-    ax.set_ylim(crop_size, 0)
-
-    plt.show()
+    return nodes
 
 
 if __name__ == "__main__":
